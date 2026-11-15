@@ -91,6 +91,7 @@ Navigation style and drive style can both be changed in Settings.
 | Talk | Quick eyebrow raise | Next reply |
 | Talk | Hold eyebrows 1 s, or slow double blink | Say it |
 | Talk | Hold left eye | Quick phrases (Yes, No, I need help, ...) |
+| Talk | Hold the spacebar (the person speaking, or a caregiver) | Listen. Only what is said while it is held gets transcribed, so a noisy room does not interfere |
 | Snake | Wink left / right | Turn |
 | Anywhere | Close both eyes 3 s | Stop, then back to the home screen |
 | Anywhere (except Look Drive) | Hold eyebrows 4 s | Eye control off / on, so you can blink freely |
