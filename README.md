@@ -2,7 +2,7 @@
 
 **Brow and Lid Input for Navigation and Conversation**
 
-[![Watch the BLINC demo](docs/demo-thumbnail.png)](https://www.youtube.com/watch?v=NQsbP_1-HG8)
+[![Watch the BLINC demo](docs/watch-the-demo.png)](https://www.youtube.com/watch?v=NQsbP_1-HG8)
 
 **[Watch the demo on YouTube](https://www.youtube.com/watch?v=NQsbP_1-HG8)**
 
