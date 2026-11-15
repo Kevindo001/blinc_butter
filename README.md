@@ -2,13 +2,13 @@
 
 **Brow and Lid Input for Navigation and Conversation**
 
-**Demo video:** https://www.youtube.com/watch?v=NQsbP_1-HG8
+[![Watch the BLINC demo](https://img.youtube.com/vi/NQsbP_1-HG8/maxresdefault.jpg)](https://www.youtube.com/watch?v=NQsbP_1-HG8)
+
+**[Watch the demo on YouTube](https://www.youtube.com/watch?v=NQsbP_1-HG8)**
 
 BLINC lets a person drive a wheelchair-style robot, hold a spoken conversation, and play a game using only their eyebrows and eyelids. It runs on a laptop with a normal webcam. No eye-tracking hardware.
 
 Built at MadHacks by Anh, Carter and Mason.
-
-![BLINC home screen](docs/screenshots/home.png)
 
 ## Why we built it
 
@@ -30,9 +30,9 @@ So we asked one question: can we bring the cost of face-controlled movement and 
 | **Talk** | BLINC listens to the person speaking to you and offers three likely replies. A quick eyebrow raise moves between them; holding your eyebrows up says the chosen one out loud. |
 | **Play** | Snake, steered by winks. It was also our test bench: if the winks were not good enough to play Snake, they were not good enough to drive. |
 
-| Talk | Snake |
-|---|---|
-| ![Talk screen](docs/screenshots/talk.png) | ![Snake](docs/screenshots/snake.png) |
+| Home | Talk | Snake |
+|---|---|---|
+| ![Home screen](docs/screenshots/home.png) | ![Talk screen](docs/screenshots/talk.png) | ![Snake](docs/screenshots/snake.png) |
 
 Setup for a new person takes about 40 seconds: follow a circle, close your eyes, raise your eyebrows, wink each side. Everything is measured against that person's own resting face, so normal blinking does nothing.
 
