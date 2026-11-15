@@ -28,24 +28,24 @@ So we asked one question: can we bring the cost of face-controlled movement and 
 |---|---|
 | **Drive** | Look where you want to go and raise your eyebrows. Butter, our robot, moves that way. Relax and it stops. Butter stands in for a power wheelchair, and its camera fills the screen so you see what it sees. |
 | **Talk** | BLINC listens to the person speaking to you and offers three likely replies. A quick eyebrow raise moves between them; holding your eyebrows up says the chosen one out loud. |
-| **Play** | Snake, steered by winks. It was also our test bench: if the winks were not good enough to play Snake, they were not good enough to drive. |
+| **Play** | Snake. Look left or right and raise your eyebrows to turn. It was also our test bench: if the controls were not good enough to play Snake, they were not good enough to drive. |
 
 | Home | Talk | Snake |
 |---|---|---|
 | ![Home screen](docs/screenshots/home.png) | ![Talk screen](docs/screenshots/talk.png) | ![Snake](docs/screenshots/snake.png) |
 
-Setup for a new person takes about 40 seconds: follow a circle, close your eyes, raise your eyebrows, wink each side. Everything is measured against that person's own resting face, so normal blinking does nothing.
+Setup for a new person takes about 25 seconds: follow a circle, close your eyes, raise your eyebrows. Everything is measured against that person's own resting face, so normal blinking does nothing.
 
 ## How it works
 
 ```mermaid
 flowchart LR
     CAM[Laptop webcam] --> MP[MediaPipe<br/>face landmarks]
-    MP --> CAL[40 s calibration<br/>your own resting face]
+    MP --> CAL[25 s calibration<br/>your own resting face]
     CAL --> GE[Gesture engine]
     MP --> GE
 
-    GE -->|eyebrow raise / hold<br/>slow double blink<br/>winks, eyes closed<br/>look left / ahead / right| APP{BLINC}
+    GE -->|eyebrow raise / hold<br/>slow double blink<br/>long blink, eyes closed<br/>look left / ahead / right| APP{BLINC}
 
     APP --> DRIVE[Drive]
     APP --> TALK[Talk]
@@ -67,7 +67,7 @@ flowchart LR
 **Turning readings into commands.** The gesture engine is plain logic with no machine learning of its own, which makes it testable. A few of the rules:
 
 - A natural blink is ignored. A command blink has to be slower than that person's own blinks.
-- A wink is judged by how lopsided the two eyes are, per side, because the other eye half-closes when most people wink.
+- We do not use winks. We tried: for a lot of people one side cannot be told apart from closing both eyes, so every control runs on eyebrows, blinks and where you look.
 - Closing both eyes is always "stop" or "back", on every screen.
 - One person only. BLINC locks onto the calibrated face and ignores smaller faces behind it, so a crowd cannot take over.
 
@@ -77,26 +77,22 @@ flowchart LR
 
 ## Controls
 
-Navigation style and drive style can both be changed in Settings.
-
 | Screen | Gesture | What it does |
 |---|---|---|
 | Menus | Quick eyebrow raise | Next option |
 | Menus | Slow double blink | Open / select |
-| Look Drive | Look left, ahead or right, then raise eyebrows | Move that way; relax to stop |
-| Look Drive | Slow double blink | Eye control off / on |
-| Blink Drive | Slow double blink, twice | Go forward |
-| Blink Drive | Double blink, or one long blink | Stop |
-| Blink Drive | Close left eye / right eye | Turn right / left (you turn toward your open eye, so you can see where you are going) |
+| Drive | Look left, ahead or right, then raise eyebrows | Move that way; relax to stop |
+| Drive | One long blink | Stop |
+| Drive | Slow double blink | Eye control off / on |
 | Talk | Quick eyebrow raise | Next reply |
 | Talk | Hold eyebrows 1 s, or slow double blink | Say it |
-| Talk | Hold left eye | Quick phrases (Yes, No, I need help, ...) |
 | Talk | Hold the spacebar (the person speaking, or a caregiver) | Listen. Only what is said while it is held gets transcribed, so a noisy room does not interfere |
-| Snake | Wink left / right | Turn |
+| Snake | Look left or right, then raise eyebrows | Turn that way |
+| Snake | Slow double blink | Pause |
 | Anywhere | Close both eyes 3 s | Stop, then back to the home screen |
-| Anywhere (except Look Drive) | Hold eyebrows 4 s | Eye control off / on, so you can blink freely |
+| Anywhere (except Drive and Snake) | Hold eyebrows 4 s | Eye control off / on, so you can blink freely |
 
-Keyboard, for a caregiver or a demo: `C` calibrate, `0` webcam off / on, `B` eye control off / on, `Esc` home, `R` (in Talk) start the conversation over. The **Dev** button in the top bar shows raw face readings live.
+Keyboard, for a caregiver or a demo: `C` calibrate, `0` webcam off / on, `B` eye control off / on, `Esc` home, `R` (in Talk) start the conversation over, `P` (in Talk) quick phrases such as Yes, No and I need help. The **Dev** button in the top bar shows raw face readings live.
 
 ## Quick start
 
@@ -155,7 +151,7 @@ The motor drivers' enable pins are held low whenever Butter is stopped, so a stu
 ./start.sh --test
 ```
 
-- **Gesture engine**: simulated people (glasses, small eyes, weak or one-sided winks, asymmetric faces) blink normally for ten minutes each with zero commands allowed, then perform every gesture hundreds of times.
+- **Gesture engine**: simulated people (glasses, small eyes, asymmetric faces) blink normally for ten minutes each with zero commands allowed, then perform every gesture hundreds of times.
 - **Services**: reply generation, speech to text and text to speech, including live calls when keys are present.
 - **Robot server**: the watchdog, speed limits and the command protocol.
 
