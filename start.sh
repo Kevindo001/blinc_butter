@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+# BLINC: one command to start everything on the laptop.
+#
+#   ./start.sh              use the real Jetson if reachable, otherwise a mock robot on this Mac
+#   ./start.sh --mock       always use the mock robot (no Jetson needed)
+#   ./start.sh --jetson IP  use the Jetson at IP (Tailscale or LAN)
+#   ./start.sh --test       run all automated tests instead of the app
+set -euo pipefail
+cd "$(dirname "$0")"
+ROOT="$PWD"
+JETSON_IP="100.127.78.50"
+MODE=auto
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --mock) MODE=mock ;;
+    --jetson) MODE=jetson; JETSON_IP="$2"; shift ;;
+    --test) MODE=test ;;
+  esac
+  shift
+done
+
+say() { printf "\033[1;33m[butter]\033[0m %s\n" "$*"; }
+die() { printf "\033[1;31m[butter]\033[0m %s\n" "$*"; exit 1; }
+
+# Always start clean: close any copy of the app (and pretend robot) that is already running, so there
+# is never more than one controller talking to Butter. Safe for the motors: Butter stops by itself
+# within half a second of losing its controller, and its own server keeps running on the Jetson.
+if [ "$MODE" != test ]; then
+  # only real launcher processes: "bash <something>/start.sh", never a shell that merely mentions it
+  for pid in $(ps -axo pid=,command= | awk '$2 ~ /(^|\/)bash$/ && $3 ~ /(^|\/)start\.sh$/ {print $1}'); do
+    [ "$pid" != "$$" ] && [ "$pid" != "$PPID" ] && kill "$pid" 2>/dev/null || true
+  done
+  pkill -f "$ROOT/app/node_modules/electron" 2>/dev/null || true
+  pkill -f "$ROOT/app/node_modules/.bin/electron" 2>/dev/null || true
+  pkill -f "butter-drive/server.py --mock" 2>/dev/null || true
+  sleep 1
+fi
+
+command -v node >/dev/null || die "Node.js 20+ is required: brew install node"
+command -v python3 >/dev/null || die "python3 is required"
+[ -f app/.env ] || die "app/.env is missing (DEEPSEEK_API_KEY, ELEVENLABS_API_KEY). Copy app/.env.example and fill it in."
+
+if [ ! -d app/node_modules/electron ]; then
+  say "Installing app dependencies (first run only, ~1 min)…"
+  (cd app && npm install --no-audit --no-fund)
+fi
+
+# python venv for the mock robot / tests (avoids touching system python)
+if [ ! -x butter-drive/.venv/bin/python ]; then
+  say "Creating python venv for the robot server…"
+  python3 -m venv butter-drive/.venv
+  butter-drive/.venv/bin/pip install -q -r butter-drive/requirements.txt pytest
+fi
+PY="$ROOT/butter-drive/.venv/bin/python"
+
+if [ "$MODE" = test ]; then
+  say "Gesture engine + services + live API tests"
+  (cd app && set -a && . ./.env && set +a && node --test test/*.test.js)
+  say "Robot server tests"
+  (cd butter-drive && "$PY" -m pytest -q test_server.py)
+  exit 0
+fi
+
+# hard 3 s limit: with the cable unplugged, nc to the cable address can hang instead of failing
+# reachable IP SECONDS
+reachable() {
+  nc -z "$1" 8770 >/dev/null 2>&1 & local pid=$!
+  ( sleep "${2:-3}"; kill "$pid" 2>/dev/null ) >/dev/null 2>&1 & local killer=$!
+  if wait "$pid" 2>/dev/null; then kill "$killer" 2>/dev/null; return 0; fi
+  kill "$killer" 2>/dev/null; return 1
+}
+
+MOCK_PID=""
+cleanup() { [ -n "$MOCK_PID" ] && kill "$MOCK_PID" 2>/dev/null || true; }
+trap cleanup EXIT INT TERM
+
+if [ "$MODE" = auto ]; then
+  # try the USB-C cable first (always 192.168.55.1), then Tailscale
+  # The cable answers instantly or not at all. Tailscale can take 3+ s to wake up on the first
+  # connection after sitting idle, so it gets longer and a second try before giving up.
+  if reachable 192.168.55.1 2; then JETSON_IP=192.168.55.1; MODE=jetson
+  elif reachable "$JETSON_IP" 8 || reachable "$JETSON_IP" 8; then MODE=jetson
+  fi
+  if [ "$MODE" = jetson ]; then :; else
+    say "!!! BUTTER NOT REACHABLE (USB 192.168.55.1 or $JETSON_IP). Using the PRETEND robot: the wheels will NOT move. !!!"
+    say "(Start it on the Jetson with: ~/Projects/butter-drive/run.sh)"
+    MODE=mock
+  fi
+fi
+
+if [ "$MODE" = mock ]; then
+  "$PY" butter-drive/server.py --mock --host 127.0.0.1 --port 8770 > /tmp/butter-mock.log 2>&1 &
+  MOCK_PID=$!
+  sleep 0.8
+  export BUTTER_URL="ws://127.0.0.1:8770"
+  say "Mock robot running (motor log: tail -f /tmp/butter-mock.log)"
+else
+  reachable "$JETSON_IP" || die "Can't reach $JETSON_IP:8770. Is server.py running on the Jetson, and are you on Tailscale/the same Wi-Fi?"
+  export BUTTER_URL="ws://$JETSON_IP:8770"
+  export BUTTER_CAMERA_URL="${BUTTER_CAMERA_URL:-http://$JETSON_IP:5600/}"
+  say "Connecting to Butter at $JETSON_IP"
+fi
+
+say "Starting the app. First launch: allow Camera + Microphone, then do the 20 s calibration."
+say "Keyboard backup: arrows = look, space = blink, D = double blink, Esc = close eyes 2s, Q/E = wink, C = recalibrate"
+cd app && npx electron .
